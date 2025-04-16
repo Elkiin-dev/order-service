@@ -2,8 +2,12 @@ package com.order.infraestructure.persistence.mappers;
 
 import com.order.domain.models.PaymentDetails;
 import com.order.infraestructure.persistence.embeddables.PaymentDetailsEmbeddable;
+import jakarta.persistence.Embeddable;
 
+@Embeddable
 public class PaymentDetailsMapper {
+
+    private PaymentDetailsMapper (){}
 
     public static PaymentDetails toDomain(PaymentDetailsEmbeddable embeddable) {
         return new PaymentDetails(

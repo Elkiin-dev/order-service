@@ -49,7 +49,6 @@ public class OrderController {
                                              @RequestBody @Validated final FinishOrderRequest request) {
         Order finished = service.finishOrder(
                 new OrderId(orderId),
-                request.getPaymentStatus(),
                 request.getCardToken(),
                 request.getPaymentGateway()
         );

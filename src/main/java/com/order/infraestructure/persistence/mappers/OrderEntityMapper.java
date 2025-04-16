@@ -4,13 +4,13 @@ import com.order.domain.models.Order;
 import com.order.domain.models.OrderId;
 import com.order.infraestructure.persistence.entities.OrderEntity;
 
-import java.util.UUID;
-
 public class OrderEntityMapper {
+
+    private OrderEntityMapper() {}
 
     public static Order toDomain(OrderEntity entity) {
         return new Order(
-                new OrderId(UUID.fromString(String.valueOf(entity.getOrderId()))),
+                new OrderId(entity.getOrderId()),
                 entity.getProducts().stream()
                         .map(ProductEntityMapper::toDomain)
                         .toList(),

@@ -1,12 +1,10 @@
 package com.order.domain.models;
 
-import com.order.domain.exceptions.InvalidBuyerDetailException;
-import com.order.domain.exceptions.InvalidCancelOrderException;
+import com.order.domain.exceptions.*;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
 import java.util.List;
 
 @Getter
@@ -17,6 +15,8 @@ public class Order {
     private final PaymentDetails paymentDetails;
     private final OrderStatus status;
     private final BuyerDetails buyerDetails;
+
+    public static final int PRODUCT_MIN_STOCK = 1;
 
     public Order(final OrderId orderId,
                  final List<Product> products,
@@ -57,26 +57,27 @@ public class Order {
         );
     }
 
-    public Order finishOrder(PaymentStatus status, String cardToken, String gateway) {
-        if (status == null || cardToken == null || cardToken.isBlank() || gateway == null) {
-            throw new IllegalArgumentException("Payment information is required to finish the order.");
+    public Order finishOrder(PaymentDetails payment) {
+        if (
+                payment.getPaymentStatus() == null ||
+                payment.getCardToken() == null ||
+                payment.getCardToken().isBlank()
+        ) {
+            throw new InvalidPaymentDetailsException();
         }
 
-        PaymentDetails payment = new PaymentDetails(
-                this.paymentDetails.getTotalPrice(),
-                cardToken,
-                status,
-                LocalDateTime.now(),
-                gateway
-        );
+        return switch (payment.getPaymentStatus()) {
+            case PAID, OFFLINE_PAYMENT -> new Order(
+                    this.orderId,
+                    this.products,
+                    payment,
+                    OrderStatus.FINISHED,
+                    this.buyerDetails
+            );
 
-        return new Order(
-                this.orderId,
-                this.products,
-                payment,
-                OrderStatus.FINISHED,
-                this.buyerDetails
-        );
+            case PAYMENT_FAILED -> throw new PaymentFailedException();
+        };
+
     }
 
     public Order updateBuyerAndProducts(BuyerEmail newEmail, List<Product> newProducts) {
@@ -86,7 +87,7 @@ public class Order {
 
         PaymentDetails updatedPayment = new PaymentDetails(
                 newTotal,
-                null, null, null, null // Aún no hay pago
+                null, null, null, null
         );
 
         return new Order(
@@ -96,6 +97,22 @@ public class Order {
                 this.status,
                 new BuyerDetails(newEmail, this.buyerDetails.getSeat())
         );
+    }
+
+    public void orderIsOpen() {
+        if (this.status != OrderStatus.OPEN) {
+            throw new OrderUpdateNotAllowedException(this.status);
+        }
+    }
+
+
+
+    public void checkProductStock(List<Product> products) {
+        for (Product product : products) {
+            if (product.getStock() < PRODUCT_MIN_STOCK) {
+                throw new InsufficientProductException(product.getName());
+            }
+        }
     }
 
 }

@@ -4,8 +4,9 @@ import com.order.domain.models.BuyerDetails;
 import com.order.domain.models.BuyerEmail;
 import com.order.domain.models.Seat;
 import com.order.infraestructure.persistence.embeddables.BuyerDetailsEmbeddable;
+import jakarta.persistence.Embeddable;
 
-
+@Embeddable
 public class BuyerDetailsMapper {
 
     private BuyerDetailsMapper() {

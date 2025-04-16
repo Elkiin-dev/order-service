@@ -1,11 +1,10 @@
 package com.order.application.service;
 
-import com.order.domain.exceptions.InvalidBuyerDetailException;
-import com.order.domain.exceptions.OrderNotFoundException;
-import com.order.domain.exceptions.ProductNotFoundException;
+import com.order.domain.exceptions.*;
 import com.order.domain.models.*;
 import com.order.domain.repositories.OrderRepository;
 import com.order.domain.repositories.ProductRepository;
+import com.order.infraestructure.services.PaymentGatewayService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -17,9 +16,9 @@ import java.util.UUID;
 @Service
 @RequiredArgsConstructor
 public class OrderService {
-
     private final ProductRepository productRepository;
     private final OrderRepository orderRepository;
+    private final PaymentGatewayService paymentGatewayService;
 
     public Order createOrder(final OrderId orderId, final BuyerDetails buyerDetails) {
         if (buyerDetails == null || buyerDetails.getSeat() == null) {
@@ -53,36 +52,66 @@ public class OrderService {
         Order order = orderRepository.findById(orderId.getValue())
                 .orElseThrow(() -> new OrderNotFoundException(orderId.getValue()));
 
+        order.orderIsOpen();
+
         List<Product> products = productIds.stream()
                 .map(id -> productRepository.findById(id)
                         .orElseThrow(() -> new ProductNotFoundException(orderId.getValue())))
                 .toList();
 
-        for (Product product : products) {
-            if (product.getStock() < 1) {
-                throw new IllegalStateException("Insufficient stock for product: " + product.getName());
-            }
-        }
+        order.checkProductStock(products);
 
-        return order.updateBuyerAndProducts(newEmail, products);
+        Order orderUpdated = order.updateBuyerAndProducts(newEmail, products);
+
+        orderRepository.save(orderUpdated);
+
+        return orderUpdated;
     }
 
     public Order cancelOrder(final OrderId orderId) {
         Order order = orderRepository.findById(orderId.getValue())
                 .orElseThrow(() -> new OrderNotFoundException(orderId.getValue()));
 
-        return order.cancelOrder();
+        order.orderIsOpen();
+
+        Order orderCanceled = order.cancelOrder();
+
+        orderRepository.update(orderCanceled);
+
+        return orderCanceled;
     }
 
     public Order finishOrder(
             final OrderId orderId,
-            final PaymentStatus paymentStatus,
             final String cardToken,
             final String gateway
     ) {
         Order order = orderRepository.findById(orderId.getValue())
                 .orElseThrow(() -> new OrderNotFoundException(orderId.getValue()));
 
-        return order.finishOrder(paymentStatus, cardToken, gateway);
+        order.orderIsOpen();
+
+        PaymentDetails payment = paymentGatewayService.processPayment(
+                order.getPaymentDetails().getTotalPrice(),
+                cardToken,
+                gateway
+        );
+
+        recalculateStock(payment, order);
+
+        Order orderFinished = order.finishOrder(payment);
+
+        orderRepository.update(orderFinished);
+
+        return orderFinished;
+    }
+
+    private void recalculateStock(PaymentDetails payment, Order order) {
+        if (payment.getPaymentStatus() == PaymentStatus.PAID || payment.getPaymentStatus() == PaymentStatus.OFFLINE_PAYMENT) {
+            for (Product product : order.getProducts()) {
+                int newStock = product.getStock() - 1;
+                productRepository.updateStock(product.getProductId().getValue(), newStock);
+            }
+        }
     }
 }

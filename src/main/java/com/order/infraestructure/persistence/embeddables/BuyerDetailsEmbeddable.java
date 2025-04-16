@@ -6,9 +6,11 @@ import lombok.Getter;
 @Embeddable
 @Getter
 public class BuyerDetailsEmbeddable {
-    private final String buyerEmail;
-    private final String seatLetter;
-    private final Integer seatNumber;
+    private String buyerEmail;
+    private String seatLetter;
+    private Integer seatNumber;
+
+    private BuyerDetailsEmbeddable () {}
 
     public BuyerDetailsEmbeddable(final String buyerEmail, final String seatLetter, final Integer seatNumber) {
         this.buyerEmail = buyerEmail;

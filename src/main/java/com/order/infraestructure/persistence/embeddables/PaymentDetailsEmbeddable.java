@@ -10,12 +10,14 @@ import java.time.LocalDateTime;
 
 @Getter
 public class PaymentDetailsEmbeddable {
-    private final BigDecimal totalPrice;
-    private final String cardToken;
+    private  BigDecimal totalPrice;
+    private  String cardToken;
     @Enumerated(EnumType.STRING)
-    private final PaymentStatus paymentStatus;
-    private final LocalDateTime localDateTime;
-    private final String paymentGateway;
+    private  PaymentStatus paymentStatus;
+    private  LocalDateTime localDateTime;
+    private  String paymentGateway;
+
+    private PaymentDetailsEmbeddable (){}
 
     public PaymentDetailsEmbeddable(
             final BigDecimal totalPrice,

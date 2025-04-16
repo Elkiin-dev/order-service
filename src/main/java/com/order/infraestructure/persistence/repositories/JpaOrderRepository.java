@@ -20,7 +20,7 @@ public class JpaOrderRepository implements OrderRepository {
 
     @Override
     public Optional<Order> findById(UUID orderId) {
-        return repository.findById(orderId.toString())
+        return repository.findById(orderId)
                 .map(OrderEntityMapper::toDomain);
     }
 
