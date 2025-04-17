@@ -348,6 +348,11 @@ Creates a new order.
 | `500` | Unexpected error             | `application/json`: Internal server error |
 
 
+### Postman Collection
+
+To make testing easier, you can import the following collection into Postman:
+[Download Postman Collection](docs/postman/OrderServiceCollection.postman_collection.json)
+
 
 ## Technology and Architecture Justification
 
